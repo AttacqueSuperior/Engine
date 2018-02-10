@@ -847,3 +847,27 @@ STNK:
 	-MustBeDestroyed:
 	ProducibleWithLevel:
 		Prerequisites: vehicles.upgraded
+
+MCV2:
+	Inherits: MCV
+	Tooltip:
+		Name: Not MCV
+	CarrierMaster:
+		Actors: YAK2, YAK2, YAK2, YAK2, YAK2
+	Armament:
+		Weapon: spawner
+	Turreted:
+		TurnSpeed: 255
+	AttackTurreted:
+	RenderSprites:
+		Image: MCV
+
+MCV3:
+	Inherits: MCV2
+	Tooltip:
+		Name: Totally not MCV
+	-CarrierMaster:
+	Mindcontroller:
+		Capacity: 10
+	RenderSprites:
+		Image: MCV

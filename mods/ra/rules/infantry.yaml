@@ -148,7 +148,7 @@ E3:
 		LocalOffset: 0,0,555
 	Armament@GARRISONED:
 		Name: garrisoned
-		Weapon: Dragon
+		Weapon: cyclicimpactprojectile # Dragon
 	TakeCover:
 		ProneOffset: 384,0,-395
 	AttackFrontal:

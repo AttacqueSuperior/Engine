@@ -431,3 +431,15 @@ U2:
 		Interval: 2
 	RejectsOrders:
 	Interactable:
+
+HIND2:
+	Inherits: HIND
+	RenderSprites:
+		Image: HIND
+	CarrierSlave:
+
+YAK2:
+	Inherits: YAK
+	RenderSprites:
+		Image: YAK
+	CarrierSlave:

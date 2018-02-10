@@ -50,6 +50,28 @@
 	Warhead@4EffWater: CreateEffect
 		-ImpactSounds:
 
+spawner:
+	Inherits: ^Cannon
+	ReloadDelay: 5
+	Range: 10c0
+	-Report: cannon2.aud
+	Projectile: InstantHit
+	Warhead@1Dam: SpreadDamage
+		Damage: 0
+	-Warhead@2Smu: LeaveSmudge
+	-Warhead@3Eff: CreateEffect
+	-Warhead@4EffWater: CreateEffect
+	
+cyclicimpactprojectile:
+	Inherits: 105mm
+	Projectile: CyclicImpactProjectile
+		Firemode: Focus
+		Weapon: cyclicimpactweapon
+		Speed: 300
+		
+cyclicimpactweapon:
+	Inherits: ^Artillery
+
 90mm:
 	Inherits: ^Cannon
 	Warhead@1Dam: SpreadDamage

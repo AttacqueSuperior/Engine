@@ -128,6 +128,7 @@
     <Compile Include="Traits\Warheads\WarheadAS.cs" />
     <Compile Include="Traits\Render\WithExitOverlay.cs" />
     <Compile Include="Traits\World\PaletteFromJasc32File.cs" />
+    <Compile Include="Traits\ReloadAmmoWhenEnabled.cs" />
     <Compile Include="Traits\GivesProximityBounty.cs" />
     <Compile Include="Traits\ProximityBounty.cs" />
     <Compile Include="Traits\ActorTag.cs" />
@@ -144,6 +145,24 @@
     <Compile Include="Traits\Conditions\GrantExternalConditionToCrusher.cs" />
     <Compile Include="Traits\Conditions\HordeBonus.cs" />
     <Compile Include="Traits\Conditions\GrantHordeBonus.cs" />
+    <Compile Include="Void\CyclicImpactProjectile.cs" />
+    <Compile Include="Void\CyclicImpactProjectileEffect.cs" />
+    <Compile Include="Yupgi\ArcRenderable.cs" />
+    <Compile Include="Yupgi\BaseSpawnerMaster.cs" />
+    <Compile Include="Yupgi\BaseSpawnerSlave.cs" />
+    <Compile Include="Yupgi\CarrierMaster.cs" />
+    <Compile Include="Yupgi\CarrierSlave.cs" />
+    <Compile Include="Yupgi\CreateRadioactivityWarhead.cs" />
+    <Compile Include="Yupgi\DamagedByRadioactivity.cs" />
+    <Compile Include="Yupgi\EnterCarrierMaster.cs" />
+    <Compile Include="Yupgi\EnterNydus.cs" />
+    <Compile Include="Yupgi\Mindcontrollable.cs" />
+    <Compile Include="Yupgi\Mindcontroller.cs" />
+    <Compile Include="Yupgi\Nydus.cs" />
+    <Compile Include="Yupgi\NydusPrimaryExit.cs" />
+    <Compile Include="Yupgi\Radioactivity.cs" />
+    <Compile Include="Yupgi\RadioactivityLayer.cs" />
+    <Compile Include="Yupgi\WithMindcontrolArc.cs" />
   </ItemGroup>
   <ItemGroup />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
