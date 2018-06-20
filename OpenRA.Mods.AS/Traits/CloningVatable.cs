@@ -14,12 +14,13 @@ namespace OpenRA.Mods.AS.Traits
 	{
 		[FieldLoader.Require]
 		[Desc("Defines the build duration in ticks until the actor will get cloned.")]
-		public readonly int BuildDuration = -1;
+		public readonly int BuildDuration;
 
 		[FieldLoader.Require]
 		[Desc("Defines the production type to be used e.g. for exists.")]
-		public readonly string ProductionType = "Vat";
+		public readonly string ProductionType;
 
+		[ActorReference]
 		[Desc("Defines which actor will get produced.")]
 		public readonly string ProductionActor = "";
 

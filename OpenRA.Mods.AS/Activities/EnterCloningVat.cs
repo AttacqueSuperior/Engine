@@ -7,9 +7,7 @@ namespace OpenRA.Mods.AS.Activities
 	public class EnterCloningVat : Enter
 	{
 		public EnterCloningVat(Actor self, Actor target, EnterBehaviour enterBehaviour)
-			: base(self, target, enterBehaviour)
-		{
-		}
+			: base(self, target, enterBehaviour) {}
 
 		protected override void OnInside(Actor self)
 		{
@@ -18,8 +16,10 @@ namespace OpenRA.Mods.AS.Activities
 			if (targetActor.IsDead || self.IsDead)
 				return;
 
-			var vat = targetActor.TraitsImplementing<CloningVat>().First();
-			vat.StartProduction(self);
+			var vat = targetActor.TraitsImplementing<CloningVat>().FirstOrDefault(v => !v.IsTraitDisabled);
+
+			if (vat != null)
+				vat.StartProduction(self);
 		}
 	}
 }

@@ -22,12 +22,12 @@ namespace OpenRA.Mods.AS.Traits
 
 	public class CloningVat : ConditionalTrait<CloningVatInfo>, Requires<ProductionInfo>, ITick, ISelectionBar, INotifyProduction
 	{
-		private Actor self;
-		private World world;
-		private Production production;
-		private ActorInfo cloningVatableActorInfo;
-		private CloningVatableInfo cloningVatableInfo;
-		private int remainingTime;
+		Actor self;
+		World world;
+		Production production;
+		ActorInfo cloningVatableActorInfo;
+		CloningVatableInfo cloningVatableInfo;
+		int remainingTime;
 
 		public CloningVat(Actor self, CloningVatInfo info, World world) : base(info)
 		{
@@ -57,7 +57,7 @@ namespace OpenRA.Mods.AS.Traits
 				var actorInfo = source.Info;
 
 				// Will cause an exception if defined actor does not exist
-				if (!string.IsNullOrWhiteSpace(cloningVatable.Info.ProductionActor))
+				if (!string.IsNullOrEmpty(cloningVatable.Info.ProductionActor))
 					actorInfo = world.Map.Rules.Actors[cloningVatable.Info.ProductionActor.ToLower()];
 
 				cloningVatableActorInfo = actorInfo;
@@ -97,10 +97,8 @@ namespace OpenRA.Mods.AS.Traits
 
 		float ISelectionBar.GetValue()
 		{
-			var value = 0f;
-
 			if (!Info.ShowProgressBar || cloningVatableActorInfo == null || cloningVatableInfo == null)
-				return value;
+				return 0f;
 
 			return remainingTime * 1.0f / cloningVatableInfo.BuildDuration;
 		}
