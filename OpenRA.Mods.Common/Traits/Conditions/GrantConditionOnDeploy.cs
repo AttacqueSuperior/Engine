@@ -155,43 +155,32 @@ namespace OpenRA.Mods.Common.Traits
 			if (!Info.SynchronizeDeployment)
 				return true;
 
-			int deployCount = 0;
-			int undeployCount = 0;
-			var mode = "undef";
-			bool deployNeeded = false;
+			int deployedCount = 0;
+			int undeployedCount = 0;
 
-			foreach(var a in actors)
+			foreach (var a in actors)
 			{
-				var gcod = a.TraitOrDefault<GrantConditionOnDeploy>();
+				GrantConditionOnDeploy gcod = null;
+				if (!a.IsDead && a.IsInWorld)
+					gcod = a.TraitOrDefault<GrantConditionOnDeploy>();
 
 				if (gcod != null && (gcod.DeployState == DeployState.Deploying || gcod.DeployState == DeployState.Deployed))
-					deployCount += 1;
+					deployedCount += 1;
 
 				if (gcod != null && (gcod.DeployState == DeployState.Undeploying || gcod.DeployState == DeployState.Undeployed))
-					undeployCount += 1;
+					undeployedCount += 1;
 			}
 
-			if (deployCount > 0 && undeployCount > 0)
-				mode = "mixed";
-
-			if (deployCount == 0 && undeployCount > 0)
-				mode = "undeployed";
-
-			if (deployCount > 0 && undeployCount == 0)
-				mode = "deployed";
-
-			if (mode == "mixed")
+			if (deployedCount > 0 && undeployedCount > 0)
 			{
 				var gcod = self.TraitOrDefault<GrantConditionOnDeploy>();
 				if (gcod.DeployState == DeployState.Undeploying || gcod.DeployState == DeployState.Undeployed)
 					return true;
 
 				return false;
-			
 			}
 
 			return true;
-
 		}
 
 		public void ResolveOrder(Actor self, Order order)
