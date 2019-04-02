@@ -143,10 +143,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		bool IIssueDeployOrder.CanIssueDeployOrder(Actor self)
 		{
-			if (!IsTraitPaused && !IsTraitDisabled && IsGroupDeployNeeded(self))
-				return true;
-			else
-				return false;
+			return !IsTraitPaused && !IsTraitDisabled && IsGroupDeployNeeded(self);
 		}
 
 		bool IsGroupDeployNeeded(Actor self)
@@ -156,8 +153,8 @@ namespace OpenRA.Mods.Common.Traits
 
 			var actors = self.World.Selection.Actors;
 
-			int deployedCount = 0;
-			int undeployedCount = 0;
+			bool hasDeployedActors = false;
+			bool hasUndeployedActors = false;
 
 			foreach (var a in actors)
 			{
@@ -165,13 +162,13 @@ namespace OpenRA.Mods.Common.Traits
 				if (!a.IsDead && a.IsInWorld)
 					gcod = a.TraitOrDefault<GrantConditionOnDeploy>();
 
-				if (gcod != null && (gcod.DeployState == DeployState.Deploying || gcod.DeployState == DeployState.Deployed))
-					deployedCount += 1;
+				if (!hasDeployedActors && gcod != null && (gcod.DeployState == DeployState.Deploying || gcod.DeployState == DeployState.Deployed))
+					hasDeployedActors = true;
 
-				if (gcod != null && (gcod.DeployState == DeployState.Undeploying || gcod.DeployState == DeployState.Undeployed))
-					undeployedCount += 1;
+				if (!hasUndeployedActors && gcod != null && (gcod.DeployState == DeployState.Undeploying || gcod.DeployState == DeployState.Undeployed))
+					hasUndeployedActors = true;
 
-				if (deployedCount > 0 && undeployedCount > 0)
+				if (hasDeployedActors && hasUndeployedActors)
 				{
 					var self_gcod = self.TraitOrDefault<GrantConditionOnDeploy>();
 					if (self_gcod.DeployState == DeployState.Undeploying || self_gcod.DeployState == DeployState.Undeployed)
