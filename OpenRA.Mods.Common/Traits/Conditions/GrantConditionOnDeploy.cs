@@ -37,7 +37,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly bool CanDeployOnRamps = false;
 
 		[Desc("Does this actor need to synchronize it's deployment with other actors?")]
-		public readonly bool SynchronizeDeployment = false;
+		public readonly bool SmartDeploy = false;
 
 		[Desc("Cursor to display when able to (un)deploy the actor.")]
 		public readonly string DeployCursor = "deploy";
@@ -141,7 +141,8 @@ namespace OpenRA.Mods.Common.Traits
 			return new Order("GrantConditionOnDeploy", self, queued);
 		}
 
-		bool IIssueDeployOrder.CanIssueDeployOrder(Actor self) {
+		bool IIssueDeployOrder.CanIssueDeployOrder(Actor self)
+		{
 			if (!IsTraitPaused && !IsTraitDisabled && IsGroupDeployNeeded(self))
 				return true;
 			else
@@ -150,10 +151,10 @@ namespace OpenRA.Mods.Common.Traits
 
 		bool IsGroupDeployNeeded(Actor self)
 		{
-			var actors = self.World.Selection.Actors;
-
-			if (!Info.SynchronizeDeployment)
+			if (!Info.SmartDeploy)
 				return true;
+
+			var actors = self.World.Selection.Actors;
 
 			int deployedCount = 0;
 			int undeployedCount = 0;
@@ -169,15 +170,15 @@ namespace OpenRA.Mods.Common.Traits
 
 				if (gcod != null && (gcod.DeployState == DeployState.Undeploying || gcod.DeployState == DeployState.Undeployed))
 					undeployedCount += 1;
-			}
 
-			if (deployedCount > 0 && undeployedCount > 0)
-			{
-				var gcod = self.TraitOrDefault<GrantConditionOnDeploy>();
-				if (gcod.DeployState == DeployState.Undeploying || gcod.DeployState == DeployState.Undeployed)
-					return true;
+				if (deployedCount > 0 && undeployedCount > 0)
+				{
+					var self_gcod = self.TraitOrDefault<GrantConditionOnDeploy>();
+					if (self_gcod.DeployState == DeployState.Undeploying || self_gcod.DeployState == DeployState.Undeployed)
+						return true;
 
-				return false;
+					return false;
+				}
 			}
 
 			return true;
