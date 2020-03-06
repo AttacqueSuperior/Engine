@@ -62,6 +62,9 @@ namespace OpenRA.Mods.AS.Traits
 		[Desc("Spawn regen delay, in ticks")]
 		public readonly int RespawnTicks = 150;
 
+		[Desc("Pip color for the spawn count.")]
+		public readonly PipType PipType = PipType.Yellow;
+
 		public override void RulesetLoaded(Ruleset rules, ActorInfo ai)
 		{
 			base.RulesetLoaded(rules, ai);
@@ -79,7 +82,7 @@ namespace OpenRA.Mods.AS.Traits
 		public override object Create(ActorInitializer init) { return new BaseSpawnerMaster(init, this); }
 	}
 
-	public class BaseSpawnerMaster : PausableConditionalTrait<BaseSpawnerMasterInfo>, INotifyKilled, INotifyOwnerChanged, INotifyActorDisposing
+	public class BaseSpawnerMaster : PausableConditionalTrait<BaseSpawnerMasterInfo>, INotifyKilled, INotifyOwnerChanged, INotifyActorDisposing, IPips
 	{
 		readonly Actor self;
 
@@ -264,6 +267,25 @@ namespace OpenRA.Mods.AS.Traits
 			foreach (var slaveEntry in SlaveEntries)
 				if (slaveEntry.IsValid)
 					slaveEntry.SpawnerSlave.OnMasterKilled(slaveEntry.Actor, e.Attacker, Info.SlaveDisposalOnKill);
+		}
+
+		public IEnumerable<PipType> GetPips(Actor self)
+		{
+			if (IsTraitDisabled)
+				yield break;
+
+			int inside = 0;
+			foreach (var slaveEntry in SlaveEntries)
+				if (slaveEntry.IsValid)
+					inside++;
+
+			for (var i = 0; i < Info.Actors.Length; i++)
+			{
+				if (i < inside)
+					yield return Info.PipType;
+				else
+					yield return PipType.Transparent;
+			}
 		}
 	}
 }
