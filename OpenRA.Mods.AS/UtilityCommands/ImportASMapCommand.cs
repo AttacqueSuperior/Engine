@@ -136,8 +136,8 @@ namespace OpenRA.Mods.AS.UtilityCommands
 			{ 0xF7, "lunrk4" },
 			{ 0xF8, "lunrk5" },
 			{ 0xF9, "lunrk6" },
-			{ 0xCC, "cafncb" },
-			{ 0xCD, "cafncw" },
+			{ 0xCB, "cafncb" },
+			{ 0xCC, "cafncw" },
 			{ 0xF1, "cafncp" },
 			{ 0xF0, "cakrmw" },
 			{ 0xF3, "gafwll" }
