@@ -48,7 +48,7 @@ namespace OpenRA.Mods.AS.Activities
 		{
 			self.World.AddFrameEndTask(w =>
 			{
-				if (infector.IsTraitDisabled)
+				if (self.IsDead || infector.IsTraitDisabled)
 					return;
 
 				if (jousting)
