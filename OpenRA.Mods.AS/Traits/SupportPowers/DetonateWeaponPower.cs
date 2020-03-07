@@ -51,10 +51,6 @@ namespace OpenRA.Mods.AS.Traits
 		[Desc("Amount of time after detonation to remove the camera")]
 		public readonly int CameraRemoveDelay = 5;
 
-		[SequenceReference]
-		[Desc("Sequence the launching actor should play when activating this power.")]
-		public readonly string ActivationSequence = "";
-
 		[Desc("Altitude above terrain below which to explode. Zero effectively deactivates airburst.")]
 		public readonly WDist AirburstAltitude = WDist.Zero;
 
@@ -93,11 +89,8 @@ namespace OpenRA.Mods.AS.Traits
 			else
 				Game.Sound.Play(SoundType.World, Info.IncomingSound);
 
-			if (!string.IsNullOrEmpty(Info.ActivationSequence))
-			{
-				var wsb = self.Trait<WithSpriteBody>();
-				wsb.PlayCustomAnimation(self, Info.ActivationSequence);
-			}
+			foreach (var launchpad in self.TraitsImplementing<INotifyNuke>())
+				launchpad.Launching(self);
 
 			var targetPosition = order.Target.CenterPosition + new WVec(WDist.Zero, WDist.Zero, Info.AirburstAltitude);
 
