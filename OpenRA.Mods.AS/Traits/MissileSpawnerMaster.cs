@@ -26,9 +26,6 @@ namespace OpenRA.Mods.AS.Traits
 		[Desc("After this many ticks, we remove the condition.")]
 		public readonly int LaunchingTicks = 15;
 
-		[Desc("Pip color for the spawn count.")]
-		public readonly PipType PipType = PipType.Green;
-
 		[GrantedConditionReference]
 		[Desc("The condition to grant to self while spawned units are loaded.",
 			"Condition can stack with multiple spawns.")]
@@ -44,7 +41,7 @@ namespace OpenRA.Mods.AS.Traits
 		public override object Create(ActorInitializer init) { return new MissileSpawnerMaster(init, this); }
 	}
 
-	public class MissileSpawnerMaster : BaseSpawnerMaster, IPips, ITick, INotifyAttack
+	public class MissileSpawnerMaster : BaseSpawnerMaster, ITick, INotifyAttack
 	{
 		readonly Dictionary<string, Stack<int>> spawnContainTokens = new Dictionary<string, Stack<int>>();
 		public readonly MissileSpawnerMasterInfo MissileSpawnerMasterInfo;
@@ -86,7 +83,7 @@ namespace OpenRA.Mods.AS.Traits
 		// invokes Attacking()
 		void INotifyAttack.Attacking(Actor self, Target target, Armament a, Barrel barrel)
 		{
-			if (IsTraitDisabled)
+			if (IsTraitDisabled || !IsTraitPaused)
 				return;
 
 			if (!Info.ArmamentNames.Contains(a.Info.Name))
@@ -141,25 +138,6 @@ namespace OpenRA.Mods.AS.Traits
 					return se;
 
 			return null;
-		}
-
-		public IEnumerable<PipType> GetPips(Actor self)
-		{
-			if (IsTraitDisabled)
-				yield break;
-
-			int inside = 0;
-			foreach (var se in SlaveEntries)
-				if (se.IsValid)
-					inside++;
-
-			for (var i = 0; i < Info.Actors.Length; i++)
-			{
-				if (i < inside)
-					yield return MissileSpawnerMasterInfo.PipType;
-				else
-					yield return PipType.Transparent;
-			}
 		}
 
 		public override void Replenish(Actor self, BaseSpawnerSlaveEntry entry)

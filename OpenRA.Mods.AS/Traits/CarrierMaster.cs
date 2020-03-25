@@ -33,9 +33,6 @@ namespace OpenRA.Mods.AS.Traits
 		[Desc("After this many ticks, we remove the condition.")]
 		public readonly int LaunchingTicks = 15;
 
-		[Desc("Pip color for the spawn count.")]
-		public readonly PipType PipType = PipType.Green;
-
 		[Desc("Instantly repair spawners when they return?")]
 		public readonly bool InstantRepair = true;
 
@@ -54,19 +51,17 @@ namespace OpenRA.Mods.AS.Traits
 		public override object Create(ActorInitializer init) { return new CarrierMaster(init, this); }
 	}
 
-	public class CarrierMaster : BaseSpawnerMaster, IPips, ITick, INotifyAttack, INotifyBecomingIdle
+	public class CarrierMaster : BaseSpawnerMaster, ITick, INotifyAttack
 	{
 		class CarrierSlaveEntry : BaseSpawnerSlaveEntry
 		{
 			public int RearmTicks = 0;
-			public bool IsLaunched = false;
 			public new CarrierSlave SpawnerSlave;
 		}
 
 		readonly Dictionary<string, Stack<int>> spawnContainTokens = new Dictionary<string, Stack<int>>();
 		public readonly CarrierMasterInfo CarrierMasterInfo;
 
-		CarrierSlaveEntry[] slaveEntries;
 		ConditionManager conditionManager;
 		Stack<int> loadedTokens = new Stack<int>();
 
@@ -92,16 +87,6 @@ namespace OpenRA.Mods.AS.Traits
 				Replenish(self, SlaveEntries);
 		}
 
-		public override BaseSpawnerSlaveEntry[] CreateSlaveEntries(BaseSpawnerMasterInfo info)
-		{
-			slaveEntries = new CarrierSlaveEntry[info.Actors.Length]; // For this class to use
-
-			for (int i = 0; i < slaveEntries.Length; i++)
-				slaveEntries[i] = new CarrierSlaveEntry();
-
-			return slaveEntries; // For the base class to use
-		}
-
 		public override void InitializeSlaveEntry(Actor slave, BaseSpawnerSlaveEntry entry)
 		{
 			var carrierSlaveEntry = entry as CarrierSlaveEntry;
@@ -118,14 +103,11 @@ namespace OpenRA.Mods.AS.Traits
 		// invokes Attacking()
 		void INotifyAttack.Attacking(Actor self, Target target, Armament a, Barrel barrel)
 		{
-			if (IsTraitDisabled)
-				return;
-
-			if (!Info.ArmamentNames.Contains(a.Info.Name))
+			if (IsTraitDisabled || !IsTraitPaused || !Info.ArmamentNames.Contains(a.Info.Name))
 				return;
 
 			// Issue retarget order for already launched ones
-			foreach (var slave in slaveEntries)
+			foreach (var slave in SlaveEntries)
 				if (slave.IsLaunched && slave.IsValid)
 					slave.SpawnerSlave.Attack(slave.Actor, target);
 
@@ -163,17 +145,15 @@ namespace OpenRA.Mods.AS.Traits
 			});
 		}
 
-		void INotifyBecomingIdle.OnBecomingIdle(Actor self)
-		{
-			Recall(self);
-		}
-
 		void Recall(Actor self)
 		{
 			// Tell launched slaves to come back and enter me.
-			foreach (var carrierSlaveEntry in slaveEntries)
-				if (carrierSlaveEntry.IsLaunched && carrierSlaveEntry.IsValid)
-					carrierSlaveEntry.SpawnerSlave.EnterSpawner(carrierSlaveEntry.Actor);
+			foreach (var slaveEntry in SlaveEntries)
+				if (slaveEntry.IsLaunched && slaveEntry.IsValid)
+				{
+					var carrierSlaveEntry = slaveEntry as CarrierSlaveEntry;
+					carrierSlaveEntry.SpawnerSlave.EnterSpawner(slaveEntry.Actor);
+				}
 		}
 
 		public override void OnSlaveKilled(Actor self, Actor slave)
@@ -185,39 +165,23 @@ namespace OpenRA.Mods.AS.Traits
 
 		CarrierSlaveEntry GetLaunchable()
 		{
-			foreach (var carrierSlaveEntry in slaveEntries)
-				if (carrierSlaveEntry.RearmTicks <= 0 && !carrierSlaveEntry.IsLaunched && carrierSlaveEntry.IsValid)
+			foreach (var slaveEntry in SlaveEntries)
+			{
+				var carrierSlaveEntry = slaveEntry as CarrierSlaveEntry;
+				if (carrierSlaveEntry.RearmTicks <= 0 && !slaveEntry.IsLaunched && slaveEntry.IsValid)
 					return carrierSlaveEntry;
+			}
 
 			return null;
-		}
-
-		public IEnumerable<PipType> GetPips(Actor self)
-		{
-			if (IsTraitDisabled)
-				yield break;
-
-			int inside = 0;
-			foreach (var carrierSlaveEntry in slaveEntries)
-				if (carrierSlaveEntry.IsValid && !carrierSlaveEntry.IsLaunched)
-					inside++;
-
-			for (var i = 0; i < Info.Actors.Length; i++)
-			{
-				if (i < inside)
-					yield return CarrierMasterInfo.PipType;
-				else
-					yield return PipType.Transparent;
-			}
 		}
 
 		public void PickupSlave(Actor self, Actor a)
 		{
 			CarrierSlaveEntry slaveEntry = null;
-			foreach (var carrierSlaveEntry in slaveEntries)
+			foreach (var carrierSlaveEntry in SlaveEntries)
 				if (carrierSlaveEntry.Actor == a)
 				{
-					slaveEntry = carrierSlaveEntry;
+					slaveEntry = carrierSlaveEntry as CarrierSlaveEntry;
 					break;
 				}
 
@@ -264,20 +228,26 @@ namespace OpenRA.Mods.AS.Traits
 				// Time to respawn someting.
 				if (respawnTicks <= 0)
 				{
-					Replenish(self, slaveEntries);
+					Replenish(self, SlaveEntries);
 
 					// If there's something left to spawn, restart the timer.
-					if (SelectEntryToSpawn(slaveEntries) != null)
+					if (SelectEntryToSpawn(SlaveEntries) != null)
 						respawnTicks = Util.ApplyPercentageModifiers(Info.RespawnTicks, reloadModifiers.Select(rm => rm.GetReloadModifier()));
 				}
 			}
 
 			// Rearm
-			foreach (var carrierSlaveEntry in slaveEntries)
+			foreach (var slaveEntry in SlaveEntries)
 			{
+				var carrierSlaveEntry = slaveEntry as CarrierSlaveEntry;
 				if (carrierSlaveEntry.RearmTicks > 0)
 					carrierSlaveEntry.RearmTicks--;
 			}
+		}
+
+		protected override void TraitPaused(Actor self)
+		{
+			Recall(self);
 		}
 	}
 }

@@ -30,12 +30,13 @@ namespace OpenRA.Mods.AS.Traits
 		public string ActorName = null;
 		public Actor Actor = null;
 		public BaseSpawnerSlave SpawnerSlave = null;
+		public bool IsLaunched;
 
 		public bool IsValid { get { return Actor != null && !Actor.IsDead; } }
 	}
 
 	[Desc("This actor can spawn actors.")]
-	public class BaseSpawnerMasterInfo : ConditionalTraitInfo
+	public class BaseSpawnerMasterInfo : PausableConditionalTraitInfo
 	{
 		[Desc("Spawn these units. Define this like paradrop support power.")]
 		public readonly string[] Actors;
@@ -78,16 +79,15 @@ namespace OpenRA.Mods.AS.Traits
 		public override object Create(ActorInitializer init) { return new BaseSpawnerMaster(init, this); }
 	}
 
-	public class BaseSpawnerMaster : ConditionalTrait<BaseSpawnerMasterInfo>, INotifyKilled, INotifyOwnerChanged, INotifyActorDisposing
+	public class BaseSpawnerMaster : PausableConditionalTrait<BaseSpawnerMasterInfo>, INotifyKilled, INotifyOwnerChanged, INotifyActorDisposing
 	{
 		readonly Actor self;
-		protected readonly BaseSpawnerSlaveEntry[] SlaveEntries;
 
 		IFacing facing;
-		ExitInfo[] exits;
-		RallyPoint rallyPoint;
 
 		protected IReloadModifier[] reloadModifiers;
+
+		public readonly BaseSpawnerSlaveEntry[] SlaveEntries;
 
 		public BaseSpawnerMaster(ActorInitializer init, BaseSpawnerMasterInfo info)
 			: base(info)
@@ -119,8 +119,6 @@ namespace OpenRA.Mods.AS.Traits
 			base.Created(self);
 
 			facing = self.TraitOrDefault<IFacing>();
-			exits = self.Info.TraitInfos<ExitInfo>().ToArray();
-			rallyPoint = self.TraitOrDefault<RallyPoint>();
 
 			reloadModifiers = self.TraitsImplementing<IReloadModifier>().ToArray();
 		}

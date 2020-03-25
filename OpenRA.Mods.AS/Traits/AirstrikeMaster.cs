@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Mods.Common;
 using OpenRA.Mods.Common.Traits;
-using OpenRA.Primitives;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.AS.Traits
@@ -33,9 +32,6 @@ namespace OpenRA.Mods.AS.Traits
 
 		[Desc("After this many ticks, we remove the condition.")]
 		public readonly int LaunchingTicks = 15;
-
-		[Desc("Pip color for the spawn count.")]
-		public readonly PipType PipType = PipType.Yellow;
 
 		[Desc("Instantly repair spawners when they return?")]
 		public readonly bool InstantRepair = true;
@@ -64,12 +60,11 @@ namespace OpenRA.Mods.AS.Traits
 		public override object Create(ActorInitializer init) { return new AirstrikeMaster(init, this); }
 	}
 
-	public class AirstrikeMaster : BaseSpawnerMaster, IPips, ITick, INotifyAttack, INotifyBecomingIdle
+	public class AirstrikeMaster : BaseSpawnerMaster, ITick, INotifyAttack
 	{
 		class AirstrikeSlaveEntry : BaseSpawnerSlaveEntry
 		{
 			public int RearmTicks = 0;
-			public bool IsLaunched = false;
 			public new AirstrikeSlave SpawnerSlave;
 		}
 
@@ -80,7 +75,6 @@ namespace OpenRA.Mods.AS.Traits
 		WVec spawnOffset;
 		WPos targetPos;
 
-		AirstrikeSlaveEntry[] slaveEntries;
 		ConditionManager conditionManager;
 
 		Stack<int> loadedTokens = new Stack<int>();
@@ -109,9 +103,9 @@ namespace OpenRA.Mods.AS.Traits
 
 		public override BaseSpawnerSlaveEntry[] CreateSlaveEntries(BaseSpawnerMasterInfo info)
 		{
-			slaveEntries = new AirstrikeSlaveEntry[info.Actors.Length]; // For this class to use
+			var slaveEntries = new AirstrikeSlaveEntry[info.Actors.Length]; // For this class to use
 
-			for (int i = 0; i < slaveEntries.Length; i++)
+			for (int i = 0; i < SlaveEntries.Length; i++)
 				slaveEntries[i] = new AirstrikeSlaveEntry();
 
 			return slaveEntries; // For the base class to use
@@ -133,14 +127,11 @@ namespace OpenRA.Mods.AS.Traits
 		// invokes Attacking()
 		void INotifyAttack.Attacking(Actor self, Target target, Armament a, Barrel barrel)
 		{
-			if (IsTraitDisabled)
-				return;
-
-			if (!Info.ArmamentNames.Contains(a.Info.Name))
+			if (IsTraitDisabled || !IsTraitPaused || !Info.ArmamentNames.Contains(a.Info.Name))
 				return;
 
 			// Issue retarget order for already launched ones
-			foreach (var slave in slaveEntries)
+			foreach (var slave in SlaveEntries)
 				if (slave.IsLaunched && slave.IsValid)
 					slave.SpawnerSlave.Attack(slave.Actor, target);
 
@@ -190,7 +181,7 @@ namespace OpenRA.Mods.AS.Traits
 				var altitude = self.World.Map.Rules.Actors[slave.Info.Name].TraitInfo<AircraftInfo>().CruiseAltitude.Length;
 				var attackRotation = WRot.FromFacing(attackFacing);
 				var delta = new WVec(0, -1024, 0).Rotate(attackRotation);
-				target = target + new WVec(0, 0, altitude);
+				target += new WVec(0, 0, altitude);
 				var startEdge = target - (self.World.Map.DistanceToEdge(target, -delta) + AirstrikeMasterInfo.Cordon).Length * delta / 1024;
 				var finishEdge = target + (self.World.Map.DistanceToEdge(target, delta) + AirstrikeMasterInfo.Cordon).Length * delta / 1024;
 
@@ -213,17 +204,15 @@ namespace OpenRA.Mods.AS.Traits
 			}
 		}
 
-		void INotifyBecomingIdle.OnBecomingIdle(Actor self)
-		{
-			Recall(self);
-		}
-
-		void Recall(Actor self)
+		void Recall()
 		{
 			// Tell launched slaves to come back and enter me.
-			foreach (var se in slaveEntries)
+			foreach (var se in SlaveEntries)
+			{
+				var childSlave = se as AirstrikeSlaveEntry;
 				if (se.IsLaunched && se.IsValid)
-					se.SpawnerSlave.LeaveMap(se.Actor);
+					childSlave.SpawnerSlave.LeaveMap(se.Actor);
+			}
 		}
 
 		public override void OnSlaveKilled(Actor self, Actor slave)
@@ -235,39 +224,23 @@ namespace OpenRA.Mods.AS.Traits
 
 		AirstrikeSlaveEntry GetLaunchable()
 		{
-			foreach (var se in slaveEntries)
-				if (se.RearmTicks <= 0 && !se.IsLaunched && se.IsValid)
-					return se;
+			foreach (var se in SlaveEntries)
+			{
+				var childSlave = se as AirstrikeSlaveEntry;
+				if (childSlave.RearmTicks <= 0 && !childSlave.IsLaunched && se.IsValid)
+					return childSlave;
+			}
 
 			return null;
-		}
-
-		public IEnumerable<PipType> GetPips(Actor self)
-		{
-			if (IsTraitDisabled)
-				yield break;
-
-			int inside = 0;
-			foreach (var se in slaveEntries)
-				if (se.IsValid && !se.IsLaunched)
-					inside++;
-
-			for (var i = 0; i < Info.Actors.Length; i++)
-			{
-				if (i < inside)
-					yield return AirstrikeMasterInfo.PipType;
-				else
-					yield return PipType.Transparent;
-			}
 		}
 
 		public void PickupSlave(Actor self, Actor a)
 		{
 			AirstrikeSlaveEntry slaveEntry = null;
-			foreach (var se in slaveEntries)
+			foreach (var se in SlaveEntries)
 				if (se.Actor == a)
 				{
-					slaveEntry = se;
+					slaveEntry = se as AirstrikeSlaveEntry;
 					break;
 				}
 
@@ -299,20 +272,26 @@ namespace OpenRA.Mods.AS.Traits
 				// Time to respawn someting.
 				if (respawnTicks <= 0)
 				{
-					Replenish(self, slaveEntries);
+					Replenish(self, SlaveEntries);
 
 					// If there's something left to spawn, restart the timer.
-					if (SelectEntryToSpawn(slaveEntries) != null)
+					if (SelectEntryToSpawn(SlaveEntries) != null)
 						respawnTicks = Util.ApplyPercentageModifiers(Info.RespawnTicks, reloadModifiers.Select(rm => rm.GetReloadModifier()));
 				}
 			}
 
 			// Rearm
-			foreach (var se in slaveEntries)
+			foreach (var se in SlaveEntries)
 			{
-				if (se.RearmTicks > 0)
-					se.RearmTicks--;
+				var slaveEntry = se as AirstrikeSlaveEntry;
+				if (slaveEntry.RearmTicks > 0)
+					slaveEntry.RearmTicks--;
 			}
+		}
+
+		protected override void TraitPaused(Actor self)
+		{
+			Recall();
 		}
 	}
 }
