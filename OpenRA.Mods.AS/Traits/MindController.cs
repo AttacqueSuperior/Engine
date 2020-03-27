@@ -176,6 +176,12 @@ namespace OpenRA.Mods.AS.Traits
 				UnstackControllingCondition(self, Info.ControllingCondition);
 		}
 
+		public void TransformSlave(Actor self, Actor oldSlave, Actor newSlave)
+		{
+			if (slaves.Contains(oldSlave))
+				slaves[slaves.FindIndex(o => o == oldSlave)] = newSlave;
+		}
+
 		void INotifyKilled.Killed(Actor self, AttackInfo e)
 		{
 			ReleaseSlaves(self);

@@ -30,11 +30,12 @@ namespace OpenRA.Mods.AS.Traits
 		public override object Create(ActorInitializer init) { return new MindControllable(init.Self, this); }
 	}
 
-	public class MindControllable : PausableConditionalTrait<MindControllableInfo>, INotifyKilled, INotifyActorDisposing, INotifyOwnerChanged
+	public class MindControllable : PausableConditionalTrait<MindControllableInfo>, INotifyKilled, INotifyActorDisposing, INotifyOwnerChanged, INotifyTransform
 	{
 		readonly MindControllableInfo info;
 		Player creatorOwner;
 		bool controlChanging;
+		Actor oldSelf = null;
 
 		ConditionManager conditionManager;
 		int token = ConditionManager.InvalidConditionToken;
@@ -84,12 +85,12 @@ namespace OpenRA.Mods.AS.Traits
 				return;
 
 			self.World.AddFrameEndTask(_ =>
-				{
-					if (master.IsDead || master.Disposed)
-						return;
+			{
+				if (master.IsDead || master.Disposed)
+					return;
 
-					master.Trait<MindController>().UnlinkSlave(master, self);
-				});
+				master.Trait<MindController>().UnlinkSlave(master, self);
+			});
 
 			Master = null;
 
@@ -136,6 +137,31 @@ namespace OpenRA.Mods.AS.Traits
 		{
 			if (Master != null)
 				RevokeMindControl(self);
+		}
+
+		void TransferMindControl(MindControllable mc)
+		{
+			Master = mc.Master;
+			creatorOwner = mc.creatorOwner;
+			controlChanging = mc.controlChanging;
+		}
+
+		void INotifyTransform.BeforeTransform(Actor self) { oldSelf = self; }
+		void INotifyTransform.OnTransform(Actor self) { }
+		void INotifyTransform.AfterTransform(Actor self)
+		{
+			if (Master != null)
+			{
+				var mc = self.TraitOrDefault<MindControllable>();
+				if (mc != null)
+				{
+					mc.TransferMindControl(this);
+					if (oldSelf != null)
+						Master.Trait<MindController>().TransformSlave(Master, oldSelf, self);
+				}
+				else
+					self.ChangeOwner(creatorOwner);
+			}
 		}
 	}
 }
