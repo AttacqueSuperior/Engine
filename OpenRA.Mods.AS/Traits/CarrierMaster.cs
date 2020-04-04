@@ -87,11 +87,21 @@ namespace OpenRA.Mods.AS.Traits
 				Replenish(self, SlaveEntries);
 		}
 
+		public override BaseSpawnerSlaveEntry[] CreateSlaveEntries(BaseSpawnerMasterInfo info)
+		{
+			var slaveEntries = new CarrierSlaveEntry[info.Actors.Length]; // For this class to use
+
+			for (int i = 0; i < slaveEntries.Length; i++)
+				slaveEntries[i] = new CarrierSlaveEntry();
+
+			return slaveEntries; // For the base class to use
+		}
+
 		public override void InitializeSlaveEntry(Actor slave, BaseSpawnerSlaveEntry entry)
 		{
-			var carrierSlaveEntry = entry as CarrierSlaveEntry;
-			base.InitializeSlaveEntry(slave, carrierSlaveEntry);
+			base.InitializeSlaveEntry(slave, entry);
 
+			var carrierSlaveEntry = entry as CarrierSlaveEntry;
 			carrierSlaveEntry.RearmTicks = 0;
 			carrierSlaveEntry.IsLaunched = false;
 			carrierSlaveEntry.SpawnerSlave = slave.Trait<CarrierSlave>();
@@ -103,7 +113,7 @@ namespace OpenRA.Mods.AS.Traits
 		// invokes Attacking()
 		void INotifyAttack.Attacking(Actor self, Target target, Armament a, Barrel barrel)
 		{
-			if (IsTraitDisabled || !IsTraitPaused || !Info.ArmamentNames.Contains(a.Info.Name))
+			if (IsTraitDisabled || IsTraitPaused || !Info.ArmamentNames.Contains(a.Info.Name))
 				return;
 
 			// Issue retarget order for already launched ones

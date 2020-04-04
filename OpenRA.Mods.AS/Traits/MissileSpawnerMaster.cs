@@ -83,7 +83,7 @@ namespace OpenRA.Mods.AS.Traits
 		// invokes Attacking()
 		void INotifyAttack.Attacking(Actor self, Target target, Armament a, Barrel barrel)
 		{
-			if (IsTraitDisabled || !IsTraitPaused)
+			if (IsTraitDisabled || IsTraitPaused)
 				return;
 
 			if (!Info.ArmamentNames.Contains(a.Info.Name))

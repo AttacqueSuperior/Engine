@@ -71,13 +71,13 @@ namespace OpenRA.Mods.AS.Traits
 		readonly Dictionary<string, Stack<int>> spawnContainTokens = new Dictionary<string, Stack<int>>();
 		public readonly AirstrikeMasterInfo AirstrikeMasterInfo;
 
+		readonly Stack<int> loadedTokens = new Stack<int>();
+
 		WPos finishEdge;
 		WVec spawnOffset;
 		WPos targetPos;
 
 		ConditionManager conditionManager;
-
-		Stack<int> loadedTokens = new Stack<int>();
 
 		int launchCondition = ConditionManager.InvalidConditionToken;
 		int launchConditionTicks;
@@ -105,7 +105,7 @@ namespace OpenRA.Mods.AS.Traits
 		{
 			var slaveEntries = new AirstrikeSlaveEntry[info.Actors.Length]; // For this class to use
 
-			for (int i = 0; i < SlaveEntries.Length; i++)
+			for (int i = 0; i < slaveEntries.Length; i++)
 				slaveEntries[i] = new AirstrikeSlaveEntry();
 
 			return slaveEntries; // For the base class to use
@@ -127,7 +127,7 @@ namespace OpenRA.Mods.AS.Traits
 		// invokes Attacking()
 		void INotifyAttack.Attacking(Actor self, Target target, Armament a, Barrel barrel)
 		{
-			if (IsTraitDisabled || !IsTraitPaused || !Info.ArmamentNames.Contains(a.Info.Name))
+			if (IsTraitDisabled || IsTraitPaused || !Info.ArmamentNames.Contains(a.Info.Name))
 				return;
 
 			// Issue retarget order for already launched ones
