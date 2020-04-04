@@ -34,6 +34,7 @@
       <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\OpenRA.Mods.Common\OpenRA.Mods.Common.csproj">
+      <Private>False</Private>
     </ProjectReference>
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" />
     <AdditionalFiles Include="../stylecop.json" />
