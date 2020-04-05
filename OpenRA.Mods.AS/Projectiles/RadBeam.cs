@@ -67,6 +67,7 @@ namespace OpenRA.Mods.AS.Projectiles
 		readonly ProjectileArgs args;
 		readonly RadBeamInfo info;
 		readonly Animation hitanim;
+		readonly Color color;
 		int ticks = 0;
 		bool doneDamage;
 		bool animationComplete;
@@ -77,6 +78,7 @@ namespace OpenRA.Mods.AS.Projectiles
 			this.args = args;
 			this.info = info;
 			target = args.PassiveTarget;
+			this.color = color;
 
 			if (!string.IsNullOrEmpty(info.HitAnim))
 				hitanim = new Animation(args.SourceActor.World, info.HitAnim);
@@ -117,7 +119,7 @@ namespace OpenRA.Mods.AS.Projectiles
 				WDist amp = info.ScaleAmplitudeWithDuration
 					? info.Amplitude * ticks / info.BeamDuration
 					: info.Amplitude;
-				yield return new RadBeamRenderable(args.Source, info.ZOffset, target - args.Source, info.Thickness, info.Color, amp, info.WaveLength, info.QuantizationCount);
+				yield return new RadBeamRenderable(args.Source, info.ZOffset, target - args.Source, info.Thickness, color, amp, info.WaveLength, info.QuantizationCount);
 			}
 
 			if (hitanim != null)
