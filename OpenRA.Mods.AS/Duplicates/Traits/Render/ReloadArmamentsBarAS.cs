@@ -10,10 +10,11 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using OpenRA.Mods.Common.Traits;
 using OpenRA.Primitives;
 using OpenRA.Traits;
 
-namespace OpenRA.Mods.Common.Traits.Render
+namespace OpenRA.Mods.AS.Traits.Render
 {
 	[Desc("Visualizes the minimum remaining time for reloading the armaments.")]
 	class ReloadArmamentsBarASInfo : ITraitInfo

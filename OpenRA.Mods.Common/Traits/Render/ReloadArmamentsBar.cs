@@ -47,7 +47,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 
 		float ISelectionBar.GetValue()
 		{
-			if (!self.Owner.IsAlliedWith(self.World.RenderPlayer))
+			if (!self.Owner.IsAlliedWith(self.World.RenderPlayer) || armaments.All(a => !a.IsReloading))
 				return 0;
 
 			return armaments.Where(a => a.IsReloading).Min(a => a.FireDelay / (float)a.Weapon.ReloadDelay);
