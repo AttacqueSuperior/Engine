@@ -128,7 +128,7 @@ namespace OpenRA.Mods.AS.Warheads
 								if (Image != null)
 									w.Add(new SpriteEffect(immobilespawnpos, w, Image, Sequence, palette));
 
-								var sound = Sounds.RandomOrDefault(Game.CosmeticRandom);
+								var sound = Sounds.RandomOrDefault(firedBy.World.LocalRandom);
 								if (sound != null)
 									Game.Sound.Play(SoundType.World, sound, immobilespawnpos);
 							});
@@ -177,7 +177,7 @@ namespace OpenRA.Mods.AS.Warheads
 							if (Image != null)
 								w.Add(new SpriteEffect(pos, w, Image, Sequence, palette));
 
-							var sound = Sounds.RandomOrDefault(Game.CosmeticRandom);
+							var sound = Sounds.RandomOrDefault(firedBy.World.LocalRandom);
 							if (sound != null)
 								Game.Sound.Play(SoundType.World, sound, pos);
 

@@ -45,9 +45,9 @@ namespace OpenRA.Mods.AS.Traits
 	{
 		readonly Dictionary<string, Stack<int>> spawnContainTokens = new Dictionary<string, Stack<int>>();
 		public readonly MissileSpawnerMasterInfo MissileSpawnerMasterInfo;
+		readonly Stack<int> loadedTokens = new Stack<int>();
 
 		ConditionManager conditionManager;
-		Stack<int> loadedTokens = new Stack<int>();
 
 		int respawnTicks = 0;
 
