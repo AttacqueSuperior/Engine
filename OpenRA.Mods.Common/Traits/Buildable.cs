@@ -28,6 +28,9 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Override the production structure type (from the Production Produces list) that this unit should be built at.")]
 		public readonly string BuildAtProductionType = null;
 
+		[Desc("Explicitly require a production type (from the Production Produces list) to reveal this unit.")]
+		public readonly string RequiresProductionType = null;
+
 		[Desc("Disable production when there are more than this many of this actor on the battlefield. Set to 0 to disable.")]
 		public readonly int BuildLimit = 0;
 

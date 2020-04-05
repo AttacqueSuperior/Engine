@@ -67,6 +67,7 @@ namespace OpenRA.Mods.AS.Traits
 			// PERF: Avoid LINQ.
 			Enabled = false;
 			var isActive = false;
+			HashSet<Production> validProductions = new HashSet<Production>();
 			foreach (var x in self.World.ActorsWithTrait<Production>())
 			{
 				if (x.Trait.IsTraitDisabled)
@@ -77,10 +78,13 @@ namespace OpenRA.Mods.AS.Traits
 
 				Enabled |= IsValidFaction;
 				isActive |= !x.Trait.IsTraitPaused;
+				validProductions.Add(x.Trait);
 			}
 
 			if (!Enabled)
 				ClearQueue();
+
+			productionTraits = validProductions.ToArray();
 
 			TickInner(self, !isActive);
 		}

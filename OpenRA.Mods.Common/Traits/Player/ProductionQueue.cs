@@ -203,7 +203,7 @@ namespace OpenRA.Mods.Common.Traits
 			{
 				var bi = a.TraitInfo<BuildableInfo>();
 
-				Producible.Add(a, new ProductionState());
+				Producible.Add(a, new ProductionState(bi.RequiresProductionType));
 				techTree.Add(a.Name, bi.Prerequisites, bi.BuildLimit, this);
 			}
 		}
@@ -271,7 +271,8 @@ namespace OpenRA.Mods.Common.Traits
 			if (developerMode.AllTech)
 				return Producible.Keys;
 
-			return buildableProducibles;
+			var productionTypes = productionTraits.Where(x => !x.IsTraitDisabled).SelectMany(x => x.Info.Produces);
+			return buildableProducibles.Where(x => Producible[x].RequiresProductionType == null || productionTypes.Contains(Producible[x].RequiresProductionType));
 		}
 
 		public bool CanBuild(ActorInfo actor)
@@ -594,6 +595,12 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		public bool Visible = true;
 		public bool Buildable = false;
+		public string RequiresProductionType = null;
+
+		public ProductionState(string requiresProductionType)
+		{
+			RequiresProductionType = requiresProductionType;
+		}
 	}
 
 	public class ProductionItem
