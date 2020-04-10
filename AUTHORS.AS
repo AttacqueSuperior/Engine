@@ -23,6 +23,9 @@ The plugin is maintained by
    > PointDefense logic
    > FlickeringPaletteEffect
 
+ * CastleJing
+   > Bugfixes on mind controller logic
+
  * Holloweye
    > SmokeParticle(Emitter) basic implementation
 
@@ -44,6 +47,7 @@ The plugin is maintained by
    > Intelligence logic
    > Warpable logic
    > Infect logic
+   > GrantTimedCondition
 
  * Sean Hunt (coppro)
    > Chrono Miner implementation (ChronoResourceDelivery)
