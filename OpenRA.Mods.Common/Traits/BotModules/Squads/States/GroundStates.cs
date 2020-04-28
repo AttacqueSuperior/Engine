@@ -25,6 +25,13 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 		{
 			return owner.SquadManager.FindClosestEnemy(owner.Units.First().CenterPosition);
 		}
+
+		protected Actor ThreatScan(Squad owner, Actor teamLeader, WDist scanRadius)
+		{
+			var enemies = owner.World.FindActorsInCircle(teamLeader.CenterPosition, scanRadius)
+					.Where(a => owner.SquadManager.IsPreferredEnemyUnit(a) && owner.SquadManager.IsNotHiddenUnit(a));
+			return enemies.ClosestTo(teamLeader.CenterPosition);
+		}
 	}
 
 	class GroundUnitsIdleState : GroundStateBase, IState

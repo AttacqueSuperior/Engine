@@ -9,18 +9,23 @@
  */
 #endregion
 
+using System.Linq;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 {
-	class UnitsForProtectionIdleState : GroundStateBase, IState
+	abstract class ProtectionStateBase : GroundStateBase
+	{
+	}
+
+	class UnitsForProtectionIdleState : ProtectionStateBase, IState
 	{
 		public void Activate(Squad owner) { }
 		public void Tick(Squad owner) { owner.FuzzyStateMachine.ChangeState(owner, new UnitsForProtectionAttackState(), true); }
 		public void Deactivate(Squad owner) { }
 	}
 
-	class UnitsForProtectionAttackState : GroundStateBase, IState
+	class UnitsForProtectionAttackState : ProtectionStateBase, IState
 	{
 		public const int BackoffTicks = 4;
 		internal int Backoff = BackoffTicks;
@@ -43,6 +48,19 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 				}
 			}
 
+			// rescan target to prevent being ambushed and die without fight
+			// return to AttackMove state for formation
+			var teamLeader = owner.Units.ClosestTo(owner.TargetActor.CenterPosition);
+			if (teamLeader == null)
+				return;
+			var teamTail = owner.Units.MaxByOrDefault(a => (a.CenterPosition - owner.TargetActor.CenterPosition).LengthSquared);
+			var protectionScanRadius = WDist.FromCells(owner.SquadManager.Info.ProtectionScanRadius);
+			var targetActor = ThreatScan(owner, teamLeader, protectionScanRadius) ?? ThreatScan(owner, teamTail, protectionScanRadius);
+			var cannotRetaliate = false;
+
+			if (targetActor != null)
+				owner.TargetActor = targetActor;
+
 			if (!owner.IsTargetVisible)
 			{
 				if (Backoff < 0)
@@ -56,15 +74,63 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			}
 			else
 			{
+				cannotRetaliate = true;
+
 				foreach (var a in owner.Units)
-					owner.Bot.QueueOrder(new Order("AttackMove", a, Target.FromCell(owner.World, owner.TargetActor.Location), false));
+				{
+					// Air units control:
+					var ammoPools = a.TraitsImplementing<AmmoPool>().ToArray();
+					if (a.Info.HasTraitInfo<AircraftInfo>() && ammoPools.Any())
+					{
+						if (BusyAttack(a))
+						{
+							cannotRetaliate = false;
+							continue;
+						}
+
+						if (!ReloadsAutomatically(ammoPools, a.TraitOrDefault<Rearmable>()))
+						{
+							if (IsRearming(a))
+								continue;
+
+							if (!HasAmmo(ammoPools))
+							{
+								owner.Bot.QueueOrder(new Order("ReturnToBase", a, false));
+								continue;
+							}
+						}
+
+						if (CanAttackTarget(a, owner.TargetActor))
+						{
+							owner.Bot.QueueOrder(new Order("Attack", a, Target.FromActor(owner.TargetActor), false));
+							cannotRetaliate = false;
+						}
+						else
+							owner.Bot.QueueOrder(new Order("AttackMove", a, Target.FromCell(owner.World, teamLeader.Location), false));
+					}
+
+					// Ground/naval units control:
+					else
+					{
+						if (CanAttackTarget(a, owner.TargetActor))
+						{
+							owner.Bot.QueueOrder(new Order("Attack", a, Target.FromActor(owner.TargetActor), false));
+							cannotRetaliate = false;
+						}
+						else
+							owner.Bot.QueueOrder(new Order("AttackMove", a, Target.FromCell(owner.World, teamLeader.Location), false));
+					}
+				}
 			}
+
+			if (cannotRetaliate)
+				owner.FuzzyStateMachine.ChangeState(owner, new UnitsForProtectionFleeState(), true);
 		}
 
 		public void Deactivate(Squad owner) { }
 	}
 
-	class UnitsForProtectionFleeState : GroundStateBase, IState
+	class UnitsForProtectionFleeState : ProtectionStateBase, IState
 	{
 		public void Activate(Squad owner) { }
 
