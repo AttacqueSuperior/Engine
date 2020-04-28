@@ -26,6 +26,29 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			return owner.SquadManager.FindClosestEnemy(owner.Units.First().CenterPosition);
 		}
 
+		protected Actor GetRandomAttackable(Squad owner)
+		{
+			var manager = owner.SquadManager;
+			var mustDestroyedEnemy = manager.World.ActorsHavingTrait<MustBeDestroyed>().Where(manager.IsPreferredEnemyUnit).ToArray();
+			var notHiddenEnemy = mustDestroyedEnemy.Where(manager.IsNotHiddenUnit).ToArray();
+
+			mustDestroyedEnemy = notHiddenEnemy.Any() ? notHiddenEnemy : mustDestroyedEnemy;
+
+			if (!mustDestroyedEnemy.Any())
+				return FindClosestEnemy(owner);
+
+			foreach (var b in mustDestroyedEnemy)
+			{
+				var enemies = manager.World.FindActorsInCircle(b.CenterPosition, WDist.FromCells(manager.Info.RushAttackScanRadius))
+					.Where(u => manager.IsPreferredEnemyUnit(u) && u.Info.HasTraitInfo<AttackBaseInfo>()).ToList();
+
+				if (AttackOrFleeFuzzy.Rush.CanAttack(owner.Units, enemies))
+					return b;
+			}
+
+			return FindClosestEnemy(owner);
+		}
+
 		protected Actor ThreatScan(Squad owner, Actor teamLeader, WDist scanRadius)
 		{
 			var enemies = owner.World.FindActorsInCircle(teamLeader.CenterPosition, scanRadius)
@@ -140,23 +163,44 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			if (!owner.IsValid)
 				return;
 
-			if (!owner.IsTargetValid)
+			// rescan target to prevent being ambushed and die without fight
+			// return to AttackMove state for formation
+			var teamLeader = owner.Units.ClosestTo(owner.TargetActor.CenterPosition);
+			if (teamLeader == null)
+				return;
+			var teamTail = owner.Units.MaxByOrDefault(a => (a.CenterPosition - owner.TargetActor.CenterPosition).LengthSquared);
+			var attackScanRadius = WDist.FromCells(owner.SquadManager.Info.AttackScanRadius);
+			var cannotRetaliate = false;
+			var targetActor = ThreatScan(owner, teamLeader, attackScanRadius) ?? ThreatScan(owner, teamTail, attackScanRadius);
+			if (targetActor == null)
 			{
-				var closestEnemy = FindClosestEnemy(owner);
-				if (closestEnemy != null)
-					owner.TargetActor = closestEnemy;
-				else
+				owner.TargetActor = GetRandomAttackable(owner);
+				owner.FuzzyStateMachine.ChangeState(owner, new GroundUnitsAttackMoveState(), true);
+				return;
+			}
+			else
+			{
+				cannotRetaliate = true;
+				owner.TargetActor = targetActor;
+
+				foreach (var a in owner.Units)
 				{
-					owner.FuzzyStateMachine.ChangeState(owner, new GroundUnitsFleeState(), true);
-					return;
+					if (!BusyAttack(a))
+					{
+						if (CanAttackTarget(a, targetActor))
+						{
+							owner.Bot.QueueOrder(new Order("Attack", a, Target.FromActor(owner.TargetActor), false));
+							cannotRetaliate = false;
+						}
+						else
+							owner.Bot.QueueOrder(new Order("AttackMove", a, Target.FromCell(owner.World, teamLeader.Location), false));
+					}
+					else
+						cannotRetaliate = false;
 				}
 			}
 
-			foreach (var a in owner.Units)
-				if (!BusyAttack(a))
-					owner.Bot.QueueOrder(new Order("Attack", a, Target.FromActor(owner.TargetActor), false));
-
-			if (ShouldFlee(owner))
+			if (ShouldFlee(owner) || cannotRetaliate)
 				owner.FuzzyStateMachine.ChangeState(owner, new GroundUnitsFleeState(), true);
 		}
 
