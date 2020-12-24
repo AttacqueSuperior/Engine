@@ -62,6 +62,10 @@ The plugin is maintained by
    > garrison logic maintainance
    > OpenToppedDamageWarhead
 
+ * Patrick Wieth
+   > PointDefense logic fixes
+   > FitImageLoadScreen
+
  * Sean Hunt (coppro)
    > Chrono Miner implementation (ChronoResourceDelivery)
 
