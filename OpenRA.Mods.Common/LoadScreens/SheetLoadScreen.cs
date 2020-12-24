@@ -9,6 +9,7 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using OpenRA.Graphics;
@@ -72,7 +73,9 @@ namespace OpenRA.Mods.Common.LoadScreens
 					density = 2;
 				}
 
-				using (var stream = ModData.DefaultFileSystem.Open(Info[key]))
+				var files = Info[key].Split(',');
+				var file = files.Random(Game.CosmeticRandom);
+				using (var stream = ModData.DefaultFileSystem.Open(file))
 				{
 					sheet = new Sheet(SheetType.BGRA, stream);
 					sheet.GetTexture().ScaleFilter = TextureScaleFilter.Linear;

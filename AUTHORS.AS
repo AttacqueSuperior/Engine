@@ -65,6 +65,7 @@ The plugin is maintained by
  * Patrick Wieth
    > PointDefense logic fixes
    > FitImageLoadScreen
+   > support for random loadscreens
 
  * Sean Hunt (coppro)
    > Chrono Miner implementation (ChronoResourceDelivery)
