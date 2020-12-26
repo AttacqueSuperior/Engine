@@ -28,7 +28,7 @@
 ############################## TOOLCHAIN ###############################
 #
 # List of .NET assemblies that we can guarantee exist
-WHITELISTED_OPENRA_ASSEMBLIES = OpenRA.exe OpenRA.Utility.exe OpenRA.Server.exe OpenRA.Platforms.Default.dll OpenRA.Game.dll OpenRA.Mods.Common.dll OpenRA.Mods.Cnc.dll OpenRA.Mods.D2k.dll
+WHITELISTED_OPENRA_ASSEMBLIES = OpenRA.exe OpenRA.Utility.exe OpenRA.Server.exe OpenRA.Platforms.Default.dll OpenRA.Game.dll OpenRA.Mods.Common.dll OpenRA.Mods.Cnc.dll OpenRA.Mods.D2k.dll OpenRA.Mods.AS.dll
 
 # These are explicitly shipped alongside our core files by the packaging script
 WHITELISTED_THIRDPARTY_ASSEMBLIES = ICSharpCode.SharpZipLib.dll FuzzyLogicLibrary.dll MaxMind.Db.dll Eluant.dll BeaconLib.dll Open.Nat.dll SDL2-CS.dll OpenAL-CS.Core.dll DiscordRPC.dll Newtonsoft.Json.dll
