@@ -20,7 +20,7 @@ namespace OpenRA.Graphics
 {
 	public sealed class WorldRenderer : IDisposable
 	{
-		public static readonly Func<IRenderable, int> RenderableScreenZPositionComparisonKey =
+		public static readonly Func<IRenderable, int> RenderableZPositionComparisonKey =
 			r => ZPosition(r.Pos, r.ZOffset);
 
 		public readonly Size TileSize;

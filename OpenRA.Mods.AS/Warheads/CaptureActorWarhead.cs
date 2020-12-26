@@ -126,7 +126,7 @@ namespace OpenRA.Mods.AS.Warheads
 			var capturable = victim.TraitsImplementing<Capturable>()
 					.FirstOrDefault(c => !c.IsTraitDisabled && c.Info.Types.Overlaps(CaptureTypes));
 
-			if (capturable == null || !capturable.Info.ValidStances.HasStance(victim.Owner.RelationshipWith(firedBy.Owner)))
+			if (capturable == null || !capturable.Info.ValidRelationships.HasStance(victim.Owner.RelationshipWith(firedBy.Owner)))
 				return false;
 
 			return base.IsValidAgainst(victim, firedBy);

@@ -37,7 +37,7 @@ namespace OpenRA.Mods.AS.Warheads
 			HashSet<Actor> players;
 
 			if (Range == WDist.Zero)
-				players = firedBy.World.Players.Where(p => ValidStances.HasStance(firedBy.Owner.RelationshipWith(p))).Select(p => p.PlayerActor).ToHashSet();
+				players = firedBy.World.Players.Where(p => ValidRelationships.HasStance(firedBy.Owner.RelationshipWith(p))).Select(p => p.PlayerActor).ToHashSet();
 			else
 			{
 				var actors = target.Type == TargetType.Actor ? new[] { target.Actor } :
