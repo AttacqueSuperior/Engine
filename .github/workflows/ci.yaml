@@ -29,9 +29,10 @@ jobs:
       - name: Report Status
         uses: sarisia/actions-status-discord@v1.8.1
         if: always()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_LINUX }}
         with:
           status: ${{ job.status }}
-          webhook: ${{ secrets.DISCORD_WEBHOOK_LINUX }}
 
   windows:
     name: Windows (Framework 4.7)
@@ -57,6 +58,7 @@ jobs:
       - name: Report Status
         uses: sarisia/actions-status-discord@v1.8.1
         if: always()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_WINDOWS }}
         with:
           status: ${{ job.status }}
-          webhook: ${{ secrets.DISCORD_WEBHOOK_WINDOWS }}
