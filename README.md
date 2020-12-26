@@ -3,7 +3,7 @@
 
 This repository was made under the guidance of the OpenRA ModSDK soft-fork approving policy and intends to maintain bleed-compatibility as much as possible with upstream OpenRA. All code alterations are under the GPLv3 license and evaluated by StyleCop to maintain OpenRA coding quality.
 
-Current build status: [![Build Status](https://travis-ci.org/AttacqueSuperior/Engine.svg?branch=master)](https://travis-ci.org/AttacqueSuperior/Engine)
+Current build status: ![Continuous Integration](https://github.com/AttacqueSuperior/Engine/workflows/Continuous%20Integration/badge.svg)
 
 Primary users of this codebase:
 * Red Alert 2 - Valiant Shades: https://github.com/AttacqueSuperior/ValiantShades
