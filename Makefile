@@ -88,7 +88,6 @@ all:
 ifeq ($(TARGETPLATFORM), unix-generic)
 	@./configure-system-libraries.sh
 endif
-	@./fetch-geoip.sh
 
 clean:
 	@-$(RM_RF) ./bin ./*/bin ./*/obj
