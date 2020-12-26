@@ -52,14 +52,14 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string Voice = "Action";
 
 		[Desc("Tolerance for attack angle. Range [0, 128], 128 covers 360 degrees.")]
-		public readonly int FacingTolerance = 128;
+		public readonly WAngle FacingTolerance = new WAngle(512);
 
 		public override void RulesetLoaded(Ruleset rules, ActorInfo ai)
 		{
 			base.RulesetLoaded(rules, ai);
 
-			if (FacingTolerance < 0 || FacingTolerance > 128)
-				throw new YamlException("Facing tolerance must be in range of [0, 128], 128 covers 360 degrees.");
+			if (FacingTolerance.Angle > 512)
+				throw new YamlException("Facing tolerance must be in range of [0, 512], 512 covers 360 degrees.");
 		}
 
 		public override abstract object Create(ActorInitializer init);
@@ -126,7 +126,7 @@ namespace OpenRA.Mods.Common.Traits
 			return () => armaments;
 		}
 
-		public bool TargetInFiringArc(Actor self, in Target target, int facingTolerance)
+		public bool TargetInFiringArc(Actor self, in Target target, WAngle facingTolerance)
 		{
 			if (facing == null)
 				return true;
@@ -377,7 +377,7 @@ namespace OpenRA.Mods.Common.Traits
 
 			return Armaments.Where(a =>
 				!a.IsTraitDisabled
-				&& (owner == null || (forceAttack ? a.Info.ForceTargetStances : a.Info.TargetStances).HasStance(self.Owner.RelationshipWith(owner)))
+				&& (owner == null || (forceAttack ? a.Info.ForceTargetRelationships : a.Info.TargetRelationships).HasStance(self.Owner.RelationshipWith(owner)))
 				&& a.Weapon.IsValidAgainst(t, self.World, self));
 		}
 
@@ -408,7 +408,7 @@ namespace OpenRA.Mods.Common.Traits
 			var stances = PlayerRelationship.None;
 			foreach (var armament in Armaments)
 				if (!armament.IsTraitDisabled)
-					stances |= armament.Info.TargetStances;
+					stances |= armament.Info.TargetRelationships;
 
 			return stances;
 		}

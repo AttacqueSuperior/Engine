@@ -40,6 +40,10 @@ namespace OpenRA
 	{
 		static void Main(string[] args)
 		{
+			var engineDir = Environment.GetEnvironmentVariable("ENGINE_DIR");
+			if (!string.IsNullOrEmpty(engineDir))
+				Platform.OverrideEngineDir(engineDir);
+
 			Log.AddChannel("perf", null);
 			Log.AddChannel("debug", null);
 
@@ -48,7 +52,7 @@ namespace OpenRA
 			var envModSearchPaths = Environment.GetEnvironmentVariable("MOD_SEARCH_PATHS");
 			var modSearchPaths = !string.IsNullOrWhiteSpace(envModSearchPaths) ?
 				FieldLoader.GetValue<string[]>("MOD_SEARCH_PATHS", envModSearchPaths) :
-				new[] { Path.Combine(".", "mods") };
+				new[] { Path.Combine(Platform.EngineDir, "mods") };
 
 			if (args.Length == 0)
 			{

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>net472</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
@@ -10,7 +10,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
     <RootNamespace>OpenRA</RootNamespace>
-    <OutputPath>..</OutputPath>
+    <OutputPath>../bin</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ExternalConsole>false</ExternalConsole>
@@ -31,31 +31,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <Optimize>false</Optimize>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetPlatform)' == 'win-x86'">
-    <Prefer32bit>true</Prefer32bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(RunConfiguration)' == 'Red Alert'">
-    <StartAction>Project</StartAction>
-    <StartArguments>Game.Mod=ra</StartArguments>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(RunConfiguration)' == 'Dune 2000'">
-    <StartAction>Project</StartAction>
-    <StartArguments>Game.Mod=d2k</StartArguments>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(RunConfiguration)' == 'Tiberian Dawn'">
-    <StartAction>Project</StartAction>
-    <StartArguments>Game.Mod=cnc</StartArguments>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(RunConfiguration)' == 'Tiberian Sun'">
-    <StartAction>Project</StartAction>
-    <StartArguments>Game.Mod=ts</StartArguments>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(RunConfiguration)' == 'Red Alert 2 - Valiant Shades'">
-    <StartAction>Project</StartAction>
-    <StartArguments>Game.Mod=ra2vsh</StartArguments>
-  </PropertyGroup>
   <ItemGroup>
-    <None Include="App.config" />
     <PackageReference Include="OpenRA-Eluant" Version="1.0.17" />
     <PackageReference Include="OpenRA-Open.NAT" Version="1.0.0" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
@@ -63,7 +39,6 @@
     <PackageReference Include="MaxMind.Db" Version="2.6.1" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0" PrivateAssets="All" />
     <AdditionalFiles Include="../stylecop.json" />
-    <AdditionalFiles Include="Properties/launchSettings.json" />
   </ItemGroup>
   <Target Name="DisableAnalyzers" BeforeTargets="CoreCompile" Condition="'$(Configuration)'=='Release'">
     <!-- Disable code style analysis on Release builds to improve compile-time performance -->

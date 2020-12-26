@@ -206,12 +206,19 @@ namespace OpenRA.Mods.Common.Activities
 				return AttackStatus.NeedsToMove;
 			}
 
-			if (!attack.TargetInFiringArc(self, target, 4 * attack.Info.FacingTolerance))
+			if (!attack.TargetInFiringArc(self, target, attack.Info.FacingTolerance))
 			{
 				var desiredFacing = (attack.GetTargetPosition(pos, target) - pos).Yaw;
-				attackStatus |= AttackStatus.NeedsToTurn;
-				QueueChild(new Turn(self, desiredFacing));
-				return AttackStatus.NeedsToTurn;
+
+				// Don't queue a turn activity: Executing a child takes an additional tick during which the target may have moved again
+				facing.Facing = Util.TickFacing(facing.Facing, desiredFacing, facing.TurnSpeed);
+
+				// Check again if we turned enough and directly continue attacking if we did
+				if (!attack.TargetInFiringArc(self, target, attack.Info.FacingTolerance))
+				{
+					attackStatus |= AttackStatus.NeedsToTurn;
+					return AttackStatus.NeedsToTurn;
+				}
 			}
 
 			attackStatus |= AttackStatus.Attacking;

@@ -1,8 +1,12 @@
 #!/bin/bash
+# OpenRA packaging script for Windows
+
+set -e
 
 command -v curl >/dev/null 2>&1 || { echo >&2 "Windows packaging requires curl."; exit 1; }
 command -v makensis >/dev/null 2>&1 || { echo >&2 "Windows packaging requires makensis."; exit 1; }
 command -v convert >/dev/null 2>&1 || { echo >&2 "Windows packaging requires ImageMagick."; exit 1; }
+command -v python3 >/dev/null 2>&1 || { echo >&2 "Windows packaging requires python 3."; exit 1; }
 
 if [ $# -ne "2" ]; then
 	echo "Usage: $(basename "$0") tag outputdir"
@@ -11,6 +15,7 @@ fi
 
 # Set the working dir to the location of this script
 cd "$(dirname "$0")" || exit 1
+. ../functions.sh
 
 TAG="$1"
 OUTPUTDIR="$2"
@@ -18,8 +23,7 @@ SRCDIR="$(pwd)/../.."
 BUILTDIR="$(pwd)/build"
 ARTWORK_DIR="$(pwd)/../artwork/"
 
-LAUNCHER_LIBS="-r:System.dll -r:System.Drawing.dll -r:System.Windows.Forms.dll -r:${BUILTDIR}/OpenRA.Game.exe"
-FAQ_URL="http://wiki.openra.net/FAQ"
+FAQ_URL="https://wiki.openra.net/FAQ"
 
 SUFFIX=" (dev)"
 if [[ ${TAG} == release* ]]; then
@@ -35,24 +39,8 @@ function makelauncher()
 	MOD_ID="${3}"
 	PLATFORM="${4}"
 
-	# Create multi-resolution icon
 	convert "${ARTWORK_DIR}/${MOD_ID}_16x16.png" "${ARTWORK_DIR}/${MOD_ID}_24x24.png" "${ARTWORK_DIR}/${MOD_ID}_32x32.png" "${ARTWORK_DIR}/${MOD_ID}_48x48.png" "${ARTWORK_DIR}/${MOD_ID}_256x256.png" "${BUILTDIR}/${MOD_ID}.ico"
-
-	sed "s|DISPLAY_NAME|${DISPLAY_NAME}|" WindowsLauncher.cs.in | sed "s|MOD_ID|${MOD_ID}|" | sed "s|FAQ_URL|${FAQ_URL}|" > WindowsLauncher.cs
-	csc WindowsLauncher.cs -warn:4 -warnaserror -platform:"${PLATFORM}" -out:"${BUILTDIR}/${LAUNCHER_NAME}" -t:winexe ${LAUNCHER_LIBS} -win32icon:"${BUILTDIR}/${MOD_ID}.ico"
-	rm WindowsLauncher.cs
-
-	# We need to set the loadFromRemoteSources flag for the launcher, but only for the "portable" zip package.
-	# Windows automatically un-trusts executables that are extracted from a downloaded zip file
-	cp "${BUILTDIR}/OpenRA.Game.exe.config" "${BUILTDIR}/${LAUNCHER_NAME}.config"
-
-	if [ "${PLATFORM}" = "x86" ]; then
-		# Enable the full 4GB address space for the 32 bit game executable
-		# The server and utility do not use enough memory to need this
-		csc MakeLAA.cs -warn:4 -warnaserror -out:"MakeLAA.exe"
-		mono "MakeLAA.exe" "${BUILTDIR}/${LAUNCHER_NAME}"
-		rm MakeLAA.exe
-	fi
+	install_windows_launcher "${SRCDIR}" "${BUILTDIR}" "win-${PLATFORM}" "${MOD_ID}" "${LAUNCHER_NAME}"  "${DISPLAY_NAME}" "${BUILTDIR}/${MOD_ID}.ico" "${FAQ_URL}"
 }
 
 function build_platform()
@@ -61,44 +49,28 @@ function build_platform()
 
 	echo "Building core files (${PLATFORM})"
 	if [ "${PLATFORM}" = "x86" ]; then
-		TARGETPLATFORM="TARGETPLATFORM=win-x86"
-		IS_WIN32="WIN32=true"
 		USE_PROGRAMFILES32="-DUSE_PROGRAMFILES32=true"
 	else
-		IS_WIN32="WIN32=false"
-		TARGETPLATFORM="TARGETPLATFORM=win-x64"
 		USE_PROGRAMFILES32=""
 	fi
 
-	pushd "${SRCDIR}" > /dev/null || exit 1
-	make clean
-	make core "${TARGETPLATFORM}" "${IS_WIN32}"
-	make version VERSION="${TAG}"
-	make install-engine "${TARGETPLATFORM}" gameinstalldir="" DESTDIR="${BUILTDIR}"
-	make install-common-mod-files gameinstalldir="" DESTDIR="${BUILTDIR}"
-	make install-default-mods gameinstalldir="" DESTDIR="${BUILTDIR}"
-	make install-dependencies "${TARGETPLATFORM}" gameinstalldir="" DESTDIR="${BUILTDIR}"
-	popd > /dev/null || exit 1
-
-	cp "${SRCDIR}/OpenRA.Game.exe.config" "${BUILTDIR}"
+	install_assemblies_mono "${SRCDIR}" "${BUILTDIR}" "win-${PLATFORM}" "False" "True" "True"
+	install_data "${SRCDIR}" "${BUILTDIR}" "cnc" "d2k" "ra"
+	set_engine_version "${TAG}" "${BUILTDIR}"
+	set_mod_version "${TAG}" "${BUILTDIR}/mods/cnc/mod.yaml" "${BUILTDIR}/mods/d2k/mod.yaml" "${BUILTDIR}/mods/ra/mod.yaml"  "${BUILTDIR}/mods/modcontent/mod.yaml"
 
 	echo "Compiling Windows launchers (${PLATFORM})"
-	makelauncher "RedAlert.exe" "Red Alert" "ra" ${PLATFORM}
-	makelauncher "TiberianDawn.exe" "Tiberian Dawn" "cnc" ${PLATFORM}
-	makelauncher "Dune2000.exe" "Dune 2000" "d2k" ${PLATFORM}
+	makelauncher "RedAlert" "Red Alert" "ra" "${PLATFORM}"
+	makelauncher "TiberianDawn" "Tiberian Dawn" "cnc" "${PLATFORM}"
+	makelauncher "Dune2000" "Dune 2000" "d2k" "${PLATFORM}"
 
 	echo "Building Windows setup.exe ($1)"
-	makensis -V2 -DSRCDIR="${BUILTDIR}" -DTAG="${TAG}" -DSUFFIX="${SUFFIX}" ${USE_PROGRAMFILES32} OpenRA.nsi
-	if [ $? -eq 0 ]; then
-		mv OpenRA.Setup.exe "${OUTPUTDIR}/OpenRA-$TAG-$1.exe"
-	else
-		exit 1
-	fi
+	makensis -V2 -DSRCDIR="${BUILTDIR}" -DTAG="${TAG}" -DSUFFIX="${SUFFIX}" -DOUTFILE="${OUTPUTDIR}/OpenRA-${TAG}-${PLATFORM}.exe" ${USE_PROGRAMFILES32} OpenRA.nsi || exit 1
 
 	echo "Packaging zip archive ($1)"
 	pushd "${BUILTDIR}" > /dev/null
-	zip "OpenRA-${TAG}-${1}-winportable.zip" -r -9 * --quiet
-	mv "OpenRA-${TAG}-${1}-winportable.zip" "${OUTPUTDIR}"
+	zip "OpenRA-${TAG}-${PLATFORM}-winportable.zip" -r -9 * --quiet
+	mv "OpenRA-${TAG}-${PLATFORM}-winportable.zip" "${OUTPUTDIR}"
 	popd > /dev/null
 
 	rm -rf "${BUILTDIR}"

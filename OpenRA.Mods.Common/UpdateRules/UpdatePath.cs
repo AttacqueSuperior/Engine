@@ -73,12 +73,12 @@ namespace OpenRA.Mods.Common.UpdateRules
 				new RenameSelfHealing(),
 				new ReplaceBurns(),
 				new RemoveMuzzleSplitFacings(),
+				new RenameStances(),
 				new RemoveTurnToDock(),
 				new RenameSmudgeSmokeFields(),
 				new RenameCircleContrast(),
 				new SplitDamagedByTerrain(),
 				new RemoveLaysTerrain(),
-				new RemoveBuildingInfluence(),
 			})
 		};
 

@@ -11,10 +11,10 @@ Cursors:
 Chrome:
 
 Assemblies:
-	./mods/common/OpenRA.Mods.Common.dll
-	./mods/common/OpenRA.Mods.Cnc.dll
-	./mods/d2k/OpenRA.Mods.D2k.dll
-	./mods/as/OpenRA.Mods.AS.dll
+	^BinDir|OpenRA.Mods.Common.dll
+	^BinDir|OpenRA.Mods.Cnc.dll
+	^BinDir|OpenRA.Mods.D2k.dll
+	^BinDir|OpenRA.Mods.AS.dll
 
 ChromeLayout:
 

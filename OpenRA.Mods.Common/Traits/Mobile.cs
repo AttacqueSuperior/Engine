@@ -368,14 +368,14 @@ namespace OpenRA.Mods.Common.Traits
 				self.QueueActivity(false, MoveTo(cell.Value, 0));
 		}
 
-		public CPos? GetAdjacentCell(CPos nextCell)
+		public CPos? GetAdjacentCell(CPos nextCell, Func<CPos, bool> preferToAvoid = null)
 		{
 			var availCells = new List<CPos>();
 			var notStupidCells = new List<CPos>();
 			foreach (CVec direction in CVec.Directions)
 			{
 				var p = ToCell + direction;
-				if (CanEnterCell(p) && CanStayInCell(p))
+				if (CanEnterCell(p) && CanStayInCell(p) && (preferToAvoid == null || !preferToAvoid(p)))
 					availCells.Add(p);
 				else if (p != nextCell && p != ToCell)
 					notStupidCells.Add(p);
@@ -666,7 +666,7 @@ namespace OpenRA.Mods.Common.Traits
 				subCell = mobile.ToSubCell;
 
 				if (recalculateSubCell)
-					subCell = mobile.Info.LocomotorInfo.SharesCell ? self.World.ActorMap.FreeSubCell(cell, subCell) : SubCell.FullCell;
+					subCell = mobile.Info.LocomotorInfo.SharesCell ? self.World.ActorMap.FreeSubCell(cell, subCell, a => a != self) : SubCell.FullCell;
 
 				// TODO: solve/reduce cell is full problem
 				if (subCell == SubCell.Invalid)

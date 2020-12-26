@@ -22,11 +22,13 @@ namespace OpenRA
 
 	public static class Platform
 	{
-		public const string SupportDirPrefix = "^";
 		public static PlatformType CurrentPlatform { get { return currentPlatform.Value; } }
 		public static readonly Guid SessionGUID = Guid.NewGuid();
 
 		static Lazy<PlatformType> currentPlatform = Exts.Lazy(GetCurrentPlatform);
+
+		static bool engineDirAccessed;
+		static string engineDir;
 
 		static bool supportDirInitialized;
 		static string systemSupportPath;
@@ -137,7 +139,7 @@ namespace OpenRA
 			}
 
 			// Use a local directory in the game root if it exists (shared with the system support dir)
-			var localSupportDir = Path.Combine(GameDir, "Support");
+			var localSupportDir = Path.Combine(EngineDir, "Support");
 			if (Directory.Exists(localSupportDir))
 				userSupportPath = systemSupportPath = localSupportDir + Path.DirectorySeparatorChar;
 
@@ -170,7 +172,45 @@ namespace OpenRA
 			userSupportPath = path;
 		}
 
-		public static string GameDir
+		public static string EngineDir
+		{
+			get
+			{
+				// Engine directory defaults to the location of the binaries,
+				// unless OverrideGameDir is called during startup.
+				if (!engineDirAccessed)
+					engineDir = BinDir;
+
+				engineDirAccessed = true;
+				return engineDir;
+			}
+		}
+
+		/// <summary>
+		/// Specify a custom engine directory that already exists on the filesystem.
+		/// Cannot be called after Platform.EngineDir has been accessed.
+		/// </summary>
+		public static void OverrideEngineDir(string path)
+		{
+			if (engineDirAccessed)
+				throw new InvalidOperationException("Attempted to override engine directory after it has already been accessed.");
+
+			// Note: Relative paths are interpreted as being relative to BinDir, not the current working dir.
+			if (!Path.IsPathRooted(path))
+				path = Path.Combine(BinDir, path);
+
+			if (!Directory.Exists(path))
+				throw new DirectoryNotFoundException(path);
+
+			if (!path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal) &&
+			    !path.EndsWith(Path.AltDirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+				path += Path.DirectorySeparatorChar;
+
+			engineDirAccessed = true;
+			engineDir = path;
+		}
+
+		public static string BinDir
 		{
 			get
 			{
@@ -189,50 +229,25 @@ namespace OpenRA
 		{
 			path = path.TrimEnd(' ', '\t');
 
-			// Paths starting with ^ are relative to the support dir
-			if (IsPathRelativeToSupportDirectory(path))
-				path = SupportDir + path.Substring(1);
+			if (path == "^SupportDir")
+				return SupportDir;
 
-			// Paths starting with . are relative to the game dir
-			if (path == ".")
-				return GameDir;
+			if (path == "^EngineDir")
+				return EngineDir;
 
-			if (path.StartsWith("./", StringComparison.Ordinal) || path.StartsWith(".\\", StringComparison.Ordinal))
-				path = GameDir + path.Substring(2);
+			if (path == "^BinDir")
+				return BinDir;
 
-			return path;
-		}
+			if (path.StartsWith("^SupportDir|", StringComparison.Ordinal))
+				path = SupportDir + path.Substring(12);
 
-		/// <summary>Replace special character prefixes with full paths.</summary>
-		public static string ResolvePath(params string[] path)
-		{
-			return ResolvePath(Path.Combine(path));
-		}
+			if (path.StartsWith("^EngineDir|", StringComparison.Ordinal))
+				path = EngineDir + path.Substring(11);
 
-		/// <summary>
-		/// Replace the full path prefix with the special notation characters ^ or .
-		/// and transforms \ path separators to / on Windows
-		/// </summary>
-		public static string UnresolvePath(string path)
-		{
-			// Use a case insensitive comparison on windows to avoid problems
-			// with inconsistent drive letter case
-			var compare = CurrentPlatform == PlatformType.Windows ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-			if (path.StartsWith(SupportDir, compare))
-				path = SupportDirPrefix + path.Substring(SupportDir.Length);
-
-			if (path.StartsWith(GameDir, compare))
-				path = "./" + path.Substring(GameDir.Length);
-
-			if (CurrentPlatform == PlatformType.Windows)
-				path = path.Replace('\\', '/');
+			if (path.StartsWith("^BinDir|", StringComparison.Ordinal))
+				path = BinDir + path.Substring(8);
 
 			return path;
-		}
-
-		public static bool IsPathRelativeToSupportDirectory(string path)
-		{
-			return path.StartsWith(SupportDirPrefix, StringComparison.Ordinal);
 		}
 	}
 }
