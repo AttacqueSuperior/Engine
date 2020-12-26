@@ -3,7 +3,7 @@ name: Continuous Integration
 on:
   push:
   pull_request:
-    branches: [ bleed ]
+    branches: [ bleed, master ]
 
 jobs:
   linux-mono:
@@ -26,13 +26,12 @@ jobs:
           make check-scripts
           make test
 
-	  - name: Report Status
-		uses: sarisia/actions-status-discord@v1.8.1
-		if: always()
-		env:
-			DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_LINUX }}
-		with:
-			status: ${{ job.status }}
+      - name: Report Status
+        uses: sarisia/actions-status-discord@v1.8.1
+        if: always()
+        with:
+          status: ${{ job.status }}
+          webhook: ${{ secrets.DISCORD_WEBHOOK_LINUX }}
 
   windows:
     name: Windows (Framework 4.7)
@@ -55,10 +54,9 @@ jobs:
           .\make.ps1 check-scripts
           .\make.ps1 test
 
-	  - name: Report Status
-		uses: sarisia/actions-status-discord@v1.8.1
-		if: always()
-		env:
-			DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_WINDOWS }}
-		with:
-			status: ${{ job.status }}
+      - name: Report Status
+        uses: sarisia/actions-status-discord@v1.8.1
+        if: always()
+        with:
+          status: ${{ job.status }}
+          webhook: ${{ secrets.DISCORD_WEBHOOK_WINDOWS }}
