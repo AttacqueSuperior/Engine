@@ -192,9 +192,8 @@ namespace OpenRA.Mods.AS.Traits
 					// HACK HACK HACK HACK
 					// FireArmamentPower does not set AttackTurreted.IsAiming which means that Turreted.Tick will try to realign against.
 					// Duplicating the FaceTarget call here ensures that there is a step towards the target direction.
-					if (!t.FaceTarget(self, target))
-						if (!t.FaceTarget(self, target))
-							return;
+					if (!t.FaceTarget(self, target) && !t.FaceTarget(self, target))
+						return;
 				}
 			}
 
@@ -211,7 +210,8 @@ namespace OpenRA.Mods.AS.Traits
 
 		void INotifyBurstComplete.FiredBurst(Actor self, in Target target, Armament a)
 		{
-			self.World.AddFrameEndTask(w => activeArmaments.Remove(a));
+			if (activeArmaments.Contains(a))
+				self.World.AddFrameEndTask(w => activeArmaments.Remove(a));
 		}
 
 		public bool IsActive(Actor self)
