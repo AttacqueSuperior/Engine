@@ -12,15 +12,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OpenRA.Mods.Common.Traits;
 using OpenRA.Traits;
 
-namespace OpenRA.Mods.Common.Traits
+namespace OpenRA.Mods.AS.Traits
 {
 	[Desc("Manages AI powerdown.")]
 	public class PowerDownBotASModuleInfo : ConditionalTraitInfo
 	{
 		[Desc("Delay (in ticks) between toggling powerdown.")]
 		public readonly int Interval = 150;
+
+		[Desc("Order string that used for powerdown.")]
+		public readonly string OrderName = "PowerDown";
 
 		public override object Create(ActorInitializer init) { return new PowerDownBotASModule(init.Self, this); }
 	}
@@ -32,17 +36,19 @@ namespace OpenRA.Mods.Common.Traits
 		PowerManager playerPower;
 		int toggleTick;
 		readonly Func<Actor, bool> isToggledBuildingsValid;
+
+		// We keep a list to track toggled buildings for performance.
 		List<BuildingPowerWrapper> toggledBuildings;
 
 		class BuildingPowerWrapper
 		{
-			public int PowerChanging;
+			public int ExpectedPowerChanging;
 			public Actor Actor;
 
 			public BuildingPowerWrapper(Actor a, int p)
 			{
 				Actor = a;
-				PowerChanging = p;
+				ExpectedPowerChanging = p;
 			}
 		}
 
@@ -52,33 +58,29 @@ namespace OpenRA.Mods.Common.Traits
 			world = self.World;
 			player = self.Owner;
 			toggledBuildings = new List<BuildingPowerWrapper>();
-			isToggledBuildingsValid = a => a.Owner == self.Owner && !a.IsDead && a.IsInWorld && GetTogglePowerChanging(a) < 0;
+			isToggledBuildingsValid = a => a.Owner == self.Owner && !a.IsDead && a.IsInWorld;
 		}
 
 		protected override void Created(Actor self)
 		{
-			// Special case handling is required for the Player actor.
-			// Created is called before Player.PlayerActor is assigned,
-			// so we must query player traits from self, which refers
-			// for bot modules always to the Player actor.
-			playerPower = self.TraitOrDefault<PowerManager>();
+			playerPower = self.Owner.PlayerActor.TraitOrDefault<PowerManager>();
 		}
 
 		protected override void TraitEnabled(Actor self)
 		{
-			toggleTick = world.LocalRandom.Next(0, Info.Interval);
+			toggleTick = world.LocalRandom.Next(Info.Interval);
 			toggledBuildings = new List<BuildingPowerWrapper>();
 		}
 
 		int GetTogglePowerChanging(Actor a)
 		{
 			var powerChangingIfToggled = 0;
-			var powerTrait = a.TraitsImplementing<Power>().Where(t => !t.IsTraitDisabled).ToArray();
-			var powerMulTrait = a.TraitsImplementing<PowerMultiplier>().ToArray();
-			if (powerTrait.Any())
+			var powerTraits = a.TraitsImplementing<Power>().Where(t => !t.IsTraitDisabled).ToArray();
+			if (powerTraits.Any())
 			{
-				powerChangingIfToggled = powerTrait.Sum(p => p.Info.Amount) * (powerMulTrait.Sum(p => p.Info.Modifier) - 100) / 100;
-				if (powerMulTrait.Where(t => !t.IsTraitDisabled).Any())
+				var powerMulTraits = a.TraitsImplementing<PowerMultiplier>().ToArray();
+				powerChangingIfToggled = powerTraits.Sum(p => p.Info.Amount) * (powerMulTraits.Sum(p => p.Info.Modifier) - 100) / 100;
+				if (powerMulTraits.Any(t => !t.IsTraitDisabled))
 					powerChangingIfToggled = -powerChangingIfToggled;
 			}
 
@@ -95,16 +97,16 @@ namespace OpenRA.Mods.Common.Traits
 
 		IEnumerable<BuildingPowerWrapper> GetOnlineBuildings(IBot bot)
 		{
-			List<BuildingPowerWrapper> toggleableBuilding = new List<BuildingPowerWrapper>();
+			List<BuildingPowerWrapper> toggleableBuildings = new List<BuildingPowerWrapper>();
 
 			foreach (var a in GetToggleableBuildings(bot))
 			{
 				var powerChanging = GetTogglePowerChanging(a);
 				if (powerChanging > 0)
-					toggleableBuilding.Add(new BuildingPowerWrapper(a, powerChanging));
+					toggleableBuildings.Add(new BuildingPowerWrapper(a, powerChanging));
 			}
 
-			return toggleableBuilding.OrderBy(bpw => bpw.PowerChanging);
+			return toggleableBuildings.OrderBy(bpw => bpw.ExpectedPowerChanging);
 		}
 
 		void IBotTick.BotTick(IBot bot)
@@ -116,22 +118,26 @@ namespace OpenRA.Mods.Common.Traits
 			}
 
 			var power = playerPower.ExcessPower;
-			toggledBuildings = toggledBuildings.Where(bpw => isToggledBuildingsValid(bpw.Actor)).OrderByDescending(bpw => bpw.PowerChanging).ToList();
+			List<Actor> togglingBuildings = new List<Actor>();
 
 			// When there is extra power, check if AI can toggle on
 			if (power > 0)
 			{
-				foreach (var bpw in toggledBuildings)
+				toggledBuildings = toggledBuildings.Where(bpw => isToggledBuildingsValid(bpw.Actor)).OrderByDescending(bpw => bpw.ExpectedPowerChanging).ToList();
+				for (int i = 0; i < toggledBuildings.Count; i++)
 				{
-					if (power + bpw.PowerChanging < 0)
+					var bpw = toggledBuildings[i];
+					if (power + bpw.ExpectedPowerChanging < 0)
 						continue;
 
-					bot.QueueOrder(new Order("PowerDown", bpw.Actor, false));
-					power += bpw.PowerChanging;
+					togglingBuildings.Add(bpw.Actor);
+					power += bpw.ExpectedPowerChanging;
+					toggledBuildings.RemoveAt(i);
 				}
 			}
 
 			// When there is no power, check if AI can toggle off
+			// and add those toggled to list for toggling on
 			else if (power < 0)
 			{
 				var buildingsCanBeOff = GetOnlineBuildings(bot);
@@ -140,10 +146,15 @@ namespace OpenRA.Mods.Common.Traits
 					if (power > 0)
 						break;
 
-					bot.QueueOrder(new Order("PowerDown", bpw.Actor, false));
-					toggledBuildings.Add(new BuildingPowerWrapper(bpw.Actor, -bpw.PowerChanging));
-					power += bpw.PowerChanging;
+					togglingBuildings.Add(bpw.Actor);
+					toggledBuildings.Add(new BuildingPowerWrapper(bpw.Actor, -bpw.ExpectedPowerChanging));
+					power += bpw.ExpectedPowerChanging;
 				}
+			}
+
+			if (togglingBuildings.Count > 0)
+			{
+				bot.QueueOrder(new Order(Info.OrderName, null, false, groupedActors: togglingBuildings.ToArray()));
 			}
 
 			toggleTick = Info.Interval;
