@@ -60,6 +60,9 @@ namespace OpenRA.Mods.AS.Traits
 		{
 			playerConditionTrait = self.Owner.PlayerActor.TraitsImplementing<ExternalCondition>()
 				.FirstOrDefault(t => t.Info.Condition == Info.Condition);
+
+			if (playerConditionTrait == null)
+				throw new YamlException("There is no ExternalCondition trait defined on the player actor for condition '{0}'.".F(Info.Condition));
 		}
 
 		void INotifyAddedToWorld.AddedToWorld(Actor self)
