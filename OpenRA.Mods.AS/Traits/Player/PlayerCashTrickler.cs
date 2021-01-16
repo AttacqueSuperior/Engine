@@ -59,10 +59,10 @@ namespace OpenRA.Mods.AS.Traits
 
 			if (--Ticks < 0)
 			{
-				var cashTrickerModifier = self.TraitsImplementing<ICashTricklerModifier>().Select(x => x.GetCashTricklerModifier());
+				var cashTricklerModifier = self.TraitsImplementing<ICashTricklerModifier>().Select(x => x.GetCashTricklerModifier());
 
 				Ticks = info.Interval;
-				resources.ChangeCash(Util.ApplyPercentageModifiers(info.Amount, cashTrickerModifier));
+				resources.ChangeCash(Util.ApplyPercentageModifiers(info.Amount, cashTricklerModifier));
 			}
 		}
 	}
