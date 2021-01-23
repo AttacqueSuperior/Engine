@@ -210,7 +210,7 @@ namespace OpenRA.Mods.AS.Traits
 
 		void INotifyBurstComplete.FiredBurst(Actor self, in Target target, Armament a)
 		{
-			if (activeArmaments.Contains(a))
+			if (enabled && activeArmaments.Contains(a))
 				self.World.AddFrameEndTask(w => activeArmaments.Remove(a));
 		}
 
