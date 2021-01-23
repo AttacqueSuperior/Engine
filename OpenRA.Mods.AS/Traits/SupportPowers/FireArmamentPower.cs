@@ -85,6 +85,7 @@ namespace OpenRA.Mods.AS.Traits
 		{
 			facing = self.TraitOrDefault<IFacing>();
 			Armaments = self.TraitsImplementing<Armament>().Where(t => t.Info.Name.Contains(FireArmamentPowerInfo.ArmamentName)).ToArray();
+			activeArmaments = new HashSet<Armament>();
 
 			var armamentturrets = Armaments.Select(x => x.Info.Turret).ToHashSet();
 			turreted = self.TraitsImplementing<Turreted>().Where(x => armamentturrets.Contains(x.Name)).Count() > 0;
